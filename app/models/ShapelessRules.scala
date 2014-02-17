@@ -124,34 +124,29 @@ trait HZip {
 
 trait HFold {
 
-  object applicativeRuleFolder extends Poly2 {
-
-    implicit def caseApplicative[I, A, B <: HList](implicit
-      app: Applicative[({type λ[O]=Rule[I, O]})#λ]
-    ) = at[Rule[I,A], Rule[I,B]] { (ra, rb) =>
-      app apply (
-        app map (rb, (bb:B) => (_:A) :: bb),
-        ra
-      )
-    }
-
-    implicit def caseApplicative2[I, A](implicit
-      app: Applicative[({type λ[O]=Rule[I, O]})#λ]
-    ) = at[Rule[I,A], HNil] { (ra, rb) =>
-      app map (ra, (_:A) :: HNil)
-    }
-
+  object applicativeFolder2 extends Poly2 {
+    implicit def caseApp[A, B <: HList, I, F[_, _]](implicit app: Applicative[({ type λ[O] = F[I, O] })#λ]) =
+      at[F[I, A], F[I, B]] { (a, b) ⇒
+        app.apply[A, A :: B](app.map[B, A ⇒ A :: B](b, x ⇒ y ⇒ y :: x), a)
+      }
+    implicit def casePure[A, B <: HList, I, F[_, _]](implicit app: Applicative[({ type λ[O] = F[I, O] })#λ], pure: A <:!< F[_, _]) =
+      at[A, F[I, B]] { (a, b) ⇒
+        app.apply[A, A :: B](app.map[B, A ⇒ A :: B](b, x ⇒ y ⇒ y :: x), app.pure(a))
+      }
   }
 
-  trait RuleApplicativeFolder[I] {
-    def apply[L <: HList, M <: HList](l: L)(implicit
-      app: Applicative[({type λ[O]=Rule[I, O]})#λ],
-      all: BinaryTCConstraintLeftFixed.+*->+*[I, Rule]#λ[L],
-      folder: RightFolder.Aux[L, Rule[I, HNil], applicativeRuleFolder.type, Rule[I, M]]
-    ): Rule[I, M] = l.foldRight(app.pure(HNil:HNil))(applicativeRuleFolder)(folder)
+  def liftRule[I] = new RuleLifter[I]
+  class RuleLifter[I] {
+    val app = Rule.applicativeRule[I]
+    def apply[L <: HList](l: L)(implicit folder: RightFolder[L, Rule[I, HNil], applicativeFolder2.type]) =
+      l.foldRight(app.pure(HNil: HNil))(applicativeFolder2)
   }
 
-  def hfold[I] = new RuleApplicativeFolder[I] {}
+  def from[I] = new FromMaker[I]
+  class FromMaker[I] {
+    def apply[L <: HList, O](l: Reader[I] ⇒ L)(implicit folder: RightFolder.Aux[L, Rule[I, HNil], applicativeFolder2.type, Rule[I, O]]) =
+      From[I](__ ⇒ liftRule[I](l(__)))
+  }
 
 }
 
