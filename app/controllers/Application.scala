@@ -100,4 +100,21 @@ object Application extends Controller {
     }
   }
 
+  val ruleFold2 = from[JsValue] { __ =>
+    (__  \ "foo1").read[String] ::
+    4 ::
+    true ::
+    (__  \ "foo2").read[String] ::
+    List(1,2,3,4) ::
+    HNil
+  }
+
+  def hfolder2 = Action(parse.json) { request =>
+    ruleFold2.validate(request.body) map { hl =>
+      Ok(hl.toString)
+    } recoverTotal { errors =>
+      BadRequest(errors.toString)
+    }
+  }
+
 }
