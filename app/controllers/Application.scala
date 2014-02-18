@@ -100,6 +100,7 @@ object Application extends Controller {
     }
   }
 
+  // @stanchme added the possibility to mix Reads & values that are lifted to Reads in the same HList ;)
   val ruleFold2 = from[JsValue] { __ =>
     (__  \ "foo1").read[String] ::
     4 ::
