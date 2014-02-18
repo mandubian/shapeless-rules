@@ -117,5 +117,17 @@ object Application extends Controller {
       BadRequest(errors.toString)
     }
   }
+  
+  /*
+  {
+    "foo1" : "toto1",
+    "foo2" : "toto2"
+  } => toto1 :: 4 :: true :: toto2 :: List(1, 2, 3, 4) :: HNil
+  
+  {
+    "foo1" : "toto1",
+    "foo2" : 4
+  } => Failure(List((/foo2,List(ValidationError(error.invalid,WrappedArray(String))))))
+  */
 
 }
